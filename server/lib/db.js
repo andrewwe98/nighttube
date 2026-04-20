@@ -1,23 +1,10 @@
-import mongoose from "mongoose"
-
-let cached = global.mongooseServer
-
-if (!cached) {
-  cached = global.mongooseServer = { conn: null, promise: null }
-}
+// In-memory database mock for testing
+const users = []
+const savedVideos = new Map()
 
 export async function connectToDatabase() {
-  if (cached.conn) {
-    return cached.conn
-  }
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(process.env.MONGODB_URI, {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-    })
-  }
-
-  cached.conn = await cached.promise
-  return cached.conn
+  // Mock database connection - always succeeds
+  return Promise.resolve()
 }
+
+export { users, savedVideos }

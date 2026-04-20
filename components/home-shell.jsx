@@ -544,9 +544,6 @@ export function HomeShell() {
                 <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-300">
                   Signed in as {session.user?.name || session.user?.email}
                 </div>
-                <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-300">
-                  API: {API_BASE_URL}
-                </div>
               </div>
             </div>
 

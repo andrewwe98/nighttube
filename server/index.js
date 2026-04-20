@@ -5,15 +5,14 @@ import cors from "cors"
 import express from "express"
 
 import { createToken, requireAuth } from "./lib/auth.js"
-import { connectToDatabase } from "./lib/db.js"
+import { connectToDatabase, users, savedVideos } from "./lib/db.js"
 import { getPopularVideos, searchVideos } from "./lib/youtube.js"
-import { User } from "./models/User.js"
 
 const app = express()
 const port = process.env.PORT || 4000
 
 // Build allowed origins list: allow FRONTEND_URL, GitHub Pages repo URL, and localhost during development
-const allowedOrigins = [process.env.FRONTEND_URL, "https://andrewwe98.github.io", "https://andrewwe98.github.io/nighttube", "http://localhost:3000"].filter(Boolean)
+const allowedOrigins = [process.env.FRONTEND_URL, "https://andrewwe98.github.io", "https://andrewwe98.github.io/nighttube", "http://localhost:3000", "http://localhost:3001"].filter(Boolean)
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -44,26 +43,29 @@ app.post("/api/auth/register", async (request, response) => {
       return response.status(400).json({ message: "Name, email, and password are required." })
     }
 
-    const existingUser = await User.findOne({ email })
+    const existingUser = users.find(user => user.email === email)
 
     if (existingUser) {
       return response.status(409).json({ message: "An account with that email already exists." })
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    const user = await User.create({
+    const user = {
+      id: Date.now().toString(),
       name,
       email,
       password: hashedPassword,
       savedVideos: [],
-    })
+    }
+    
+    users.push(user)
 
     const token = createToken(user)
 
     return response.status(201).json({
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id,
         name: user.name,
         email: user.email,
       },
@@ -80,7 +82,7 @@ app.post("/api/auth/login", async (request, response) => {
     const email = request.body.email?.trim().toLowerCase()
     const password = request.body.password?.trim()
 
-    const user = await User.findOne({ email })
+    const user = users.find(u => u.email === email)
 
     if (!user) {
       return response.status(401).json({ message: "Invalid email or password." })
@@ -97,7 +99,7 @@ app.post("/api/auth/login", async (request, response) => {
     return response.json({
       token,
       user: {
-        id: user._id.toString(),
+        id: user.id,
         name: user.name,
         email: user.email,
       },
@@ -110,8 +112,8 @@ app.post("/api/auth/login", async (request, response) => {
 app.get("/api/saved-videos", requireAuth, async (request, response) => {
   try {
     await connectToDatabase()
-    const user = await User.findOne({ email: request.user.email }).lean()
-    return response.json({ savedVideos: user?.savedVideos || [] })
+    const userVideos = savedVideos.get(request.user.email) || []
+    return response.json({ savedVideos: userVideos })
   } catch (error) {
     return response.status(500).json({ message: error.message || "Unable to fetch saved videos." })
   }
@@ -120,14 +122,9 @@ app.get("/api/saved-videos", requireAuth, async (request, response) => {
 app.post("/api/saved-videos", requireAuth, async (request, response) => {
   try {
     await connectToDatabase()
-    const savedVideos = Array.isArray(request.body.savedVideos) ? request.body.savedVideos : []
-    await User.findOneAndUpdate(
-      { email: request.user.email },
-      { $set: { savedVideos } },
-      { new: true },
-    )
-
-    return response.json({ savedVideos })
+    const newSavedVideos = Array.isArray(request.body.savedVideos) ? request.body.savedVideos : []
+    savedVideos.set(request.user.email, newSavedVideos)
+    return response.json({ savedVideos: newSavedVideos })
   } catch (error) {
     return response.status(500).json({ message: error.message || "Unable to save videos." })
   }
