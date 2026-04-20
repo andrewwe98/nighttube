@@ -12,9 +12,18 @@ import { User } from "./models/User.js"
 const app = express()
 const port = process.env.PORT || 4000
 
+// Build allowed origins list: allow FRONTEND_URL, GitHub Pages repo URL, and localhost during development
+const allowedOrigins = [process.env.FRONTEND_URL, "https://andrewwe98.github.io", "https://andrewwe98.github.io/nighttube", "http://localhost:3000"].filter(Boolean)
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL, "http://localhost:3000"].filter(Boolean),
+    origin: function (origin, callback) {
+      // allow requests with no origin (like curl/postman)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true)
+      }
+      return callback(new Error("CORS policy: Origin not allowed"))
+    },
   }),
 )
 app.use(express.json())
