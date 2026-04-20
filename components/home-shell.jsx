@@ -18,9 +18,12 @@ function getStoredSession() {
     return { token: "", user: null }
   }
 
-  return JSON.parse(
-    window.localStorage.getItem(SESSION_KEY) || '{"token":"","user":null}',
-  )
+  try {
+    const stored = window.localStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : { token: "", user: null }
+  } catch {
+    return { token: "", user: null }
+  }
 }
 
 async function apiFetch(path, options = {}, token = "") {
@@ -129,7 +132,7 @@ function AuthCard({
 
       <p className="mt-4 text-sm text-slate-400">
         {authMessage ||
-          "This frontend is static on GitHub Pages. After login it talks to your Render backend for auth, YouTube search, and saved videos."}
+          "This React frontend talks to the Express.js backend for auth, YouTube search, and saved videos."}
       </p>
     </aside>
   )
@@ -142,21 +145,21 @@ function LoginShell(props) {
         <section className="grid w-full gap-6 lg:grid-cols-[1.25fr_0.85fr]">
           <div className="glass-panel spotlight-card rounded-[2.5rem] p-8 sm:p-10 lg:p-12">
             <div className="rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-sky-200">
-              GitHub Pages Frontend • Render API
+              React Frontend • Express.js API
             </div>
             <p className="mt-8 text-sm uppercase tracking-[0.4em] text-slate-400">Deployment ready</p>
             <h1 className="headline mt-4 max-w-4xl text-5xl font-semibold leading-[0.95] text-white sm:text-6xl">
-              Static frontend on GitHub Pages, real backend on Render.
+              React frontend with Express.js backend API.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              Log in to load YouTube search results from your deployed API, then save videos to MongoDB through the Render backend.
+              Log in to load YouTube search results from the Express.js API, then save videos to your collection.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {[
-                ["Frontend", "GitHub Pages"],
-                ["Backend", "Render API"],
-                ["Database", "MongoDB Atlas"],
+                ["Frontend", "React"],
+                ["Backend", "Express.js"],
+                ["API", "YouTube Data v3"],
               ].map(([label, value]) => (
                 <div key={label} className="glass-panel rounded-3xl px-5 py-4">
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
@@ -314,8 +317,13 @@ export function HomeShell() {
 
   useEffect(() => {
     setSession(getStoredSession())
-    const localVideos = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]")
-    setSavedVideos(localVideos)
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY)
+      const localVideos = stored ? JSON.parse(stored) : []
+      setSavedVideos(localVideos)
+    } catch {
+      setSavedVideos([])
+    }
   }, [])
 
   useEffect(() => {
@@ -333,7 +341,14 @@ export function HomeShell() {
           return
         }
 
-        const localVideos = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]")
+        let localVideos = []
+        try {
+          const stored = window.localStorage.getItem(STORAGE_KEY)
+          localVideos = stored ? JSON.parse(stored) : []
+        } catch {
+          localVideos = []
+        }
+        
         const merged = [...data.savedVideos, ...localVideos].reduce((collection, current) => {
           if (!collection.find((item) => item.videoId === current.videoId)) {
             collection.push(current)
@@ -343,7 +358,11 @@ export function HomeShell() {
         }, [])
 
         setSavedVideos(merged)
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+        } catch {
+          // Silently fail if localStorage is not available
+        }
 
         await apiFetch(
           "/api/saved-videos",
@@ -404,7 +423,11 @@ export function HomeShell() {
 
   async function syncVideos(nextVideos) {
     setSavedVideos(nextVideos)
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextVideos))
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextVideos))
+    } catch {
+      // Silently fail if localStorage is not available
+    }
 
     if (!isAuthed) {
       return
@@ -454,7 +477,11 @@ export function HomeShell() {
         user: data.user,
       }
 
-      window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+      try {
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+      } catch {
+        // Silently fail if localStorage is not available
+      }
       setSession(nextSession)
       setAuthForm({ name: "", email: "", password: "" })
     } catch (error) {
@@ -491,7 +518,11 @@ export function HomeShell() {
     setQuery("")
     setVideoMessage("")
     setAuthMessage("")
-    window.localStorage.removeItem(SESSION_KEY)
+    try {
+      window.localStorage.removeItem(SESSION_KEY)
+    } catch {
+      // Silently fail if localStorage is not available
+    }
   }
 
   const savedLookup = useMemo(
@@ -519,7 +550,7 @@ export function HomeShell() {
         <section className="glass-panel spotlight-card rounded-[2.25rem] p-6 sm:p-8 lg:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-sky-200">
-              GitHub Pages Frontend • Render Backend
+              React Frontend • Express.js Backend
             </div>
             <button
               type="button"
@@ -537,7 +568,7 @@ export function HomeShell() {
                 Search and watch YouTube videos after login.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                Your frontend is static, but the experience is still full stack. Auth, YouTube search, and saved videos all run through the deployed Render API.
+                Full stack experience with React frontend and Express.js backend. Auth, YouTube search, and saved videos all run through the API.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -551,7 +582,7 @@ export function HomeShell() {
               <p className="text-xs uppercase tracking-[0.35em] text-violet-300">Search feed</p>
               <h2 className="headline mt-2 text-2xl font-semibold text-white">Find videos instantly</h2>
               <p className="mt-3 text-sm leading-7 text-slate-300">
-                Trending results load by default from Render. Search uses the YouTube Data API on the backend, keeping your API key off GitHub Pages.
+                Trending results load by default. Search uses the YouTube Data API on the backend, keeping your API key secure.
               </p>
               <div className="mt-6">
                 <SearchBar
