@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "check": "npm run lint && npm run build"
     ,
-    "predeploy": "next build",
+    "predeploy": "NEXT_PUBLIC_API_BASE_URL=https://nighttube.onrender.com next build",
     "deploy": "gh-pages -d out"
   },
   "dependencies": {
