@@ -1,6 +1,4 @@
 {
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/saved-videos/route": "app/api/saved-videos/route.js",
-  "/api/youtube/search/route": "app/api/youtube/search/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js"
 }

@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "export": "next build",
     "start": "next start",
     "lint": "eslint .",
     "check": "npm run lint && npm run build"
+    ,
+    "predeploy": "next build && next export",
+    "deploy": "gh-pages -d out"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -28,6 +32,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.3.0",
     "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "gh-pages": "^5.0.0"
   }
 }

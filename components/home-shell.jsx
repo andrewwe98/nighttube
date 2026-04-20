@@ -1,16 +1,50 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
-import { signIn, signOut, useSession } from "next-auth/react"
 
 const STORAGE_KEY = "nighttube-saved-videos"
+const SESSION_KEY = "nighttube-session"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
 function formatCount(count) {
   return new Intl.NumberFormat("en", {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(count || 0)
+}
+
+function getStoredSession() {
+  if (typeof window === "undefined") {
+    return { token: "", user: null }
+  }
+
+  return JSON.parse(
+    window.localStorage.getItem(SESSION_KEY) || '{"token":"","user":null}',
+  )
+}
+
+async function apiFetch(path, options = {}, token = "") {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || "Request failed.")
+  }
+
+  return data
 }
 
 function AuthCard({
@@ -20,7 +54,6 @@ function AuthCard({
   setAuthForm,
   authMessage,
   authLoading,
-  googleEnabled,
   onSubmit,
 }) {
   return (
@@ -29,7 +62,7 @@ function AuthCard({
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-sky-300">Account Access</p>
           <h2 className="headline mt-2 text-2xl font-semibold text-white">
-            {mode === "login" ? "Sign in to unlock YouTube search" : "Create your NightTube account"}
+            {mode === "login" ? "Sign in to unlock videos" : "Create your NightTube account"}
           </h2>
         </div>
         <div className="rounded-full border border-white/10 bg-white/5 p-1">
@@ -94,17 +127,9 @@ function AuthCard({
         </button>
       </form>
 
-      <button
-        type="button"
-        onClick={() => signIn("google")}
-        disabled={!googleEnabled}
-        className="mt-3 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {googleEnabled ? "Continue with Google" : "Add Google env vars to enable Google login"}
-      </button>
-
       <p className="mt-4 text-sm text-slate-400">
-        {authMessage || "After login you’ll see live YouTube results, search, embeds, and your saved list."}
+        {authMessage ||
+          "This frontend is static on GitHub Pages. After login it talks to your Render backend for auth, YouTube search, and saved videos."}
       </p>
     </aside>
   )
@@ -117,21 +142,21 @@ function LoginShell(props) {
         <section className="grid w-full gap-6 lg:grid-cols-[1.25fr_0.85fr]">
           <div className="glass-panel spotlight-card rounded-[2.5rem] p-8 sm:p-10 lg:p-12">
             <div className="rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-sky-200">
-              Next.js • Tailwind • YouTube API
+              GitHub Pages Frontend • Render API
             </div>
-            <p className="mt-8 text-sm uppercase tracking-[0.4em] text-slate-400">Members only</p>
+            <p className="mt-8 text-sm uppercase tracking-[0.4em] text-slate-400">Deployment ready</p>
             <h1 className="headline mt-4 max-w-4xl text-5xl font-semibold leading-[0.95] text-white sm:text-6xl">
-              Log in first, then browse and search real YouTube videos in one place.
+              Static frontend on GitHub Pages, real backend on Render.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-              NightTube now gates the experience properly. Sign in to unlock live search results, trending videos, embedded playback, and your saved library.
+              Log in to load YouTube search results from your deployed API, then save videos to MongoDB through the Render backend.
             </p>
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               {[
-                ["Live results", "YouTube API feed"],
-                ["Search flow", "Query videos instantly"],
-                ["Saved library", "Keep picks per account"],
+                ["Frontend", "GitHub Pages"],
+                ["Backend", "Render API"],
+                ["Database", "MongoDB Atlas"],
               ].map(([label, value]) => (
                 <div key={label} className="glass-panel rounded-3xl px-5 py-4">
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
@@ -269,11 +294,7 @@ function SavedList({ videos }) {
   )
 }
 
-export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
-  const router = useRouter()
-  const { data: clientSession } = useSession()
-  const session = clientSession ?? initialSession
-
+export function HomeShell() {
   const [mode, setMode] = useState("login")
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState("")
@@ -282,15 +303,17 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
     email: "",
     password: "",
   })
+  const [session, setSession] = useState({ token: "", user: null })
   const [savedVideos, setSavedVideos] = useState([])
   const [videos, setVideos] = useState([])
   const [query, setQuery] = useState("")
   const [videoLoading, setVideoLoading] = useState(false)
   const [videoMessage, setVideoMessage] = useState("")
 
-  const isAuthed = Boolean(session?.user?.email)
+  const isAuthed = Boolean(session.token && session.user?.email)
 
   useEffect(() => {
+    setSession(getStoredSession())
     const localVideos = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]")
     setSavedVideos(localVideos)
   }, [])
@@ -304,8 +327,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
 
     async function hydrateSavedVideos() {
       try {
-        const response = await fetch("/api/saved-videos", { cache: "no-store" })
-        const data = await response.json()
+        const data = await apiFetch("/api/saved-videos", {}, session.token)
 
         if (cancelled) {
           return
@@ -323,13 +345,18 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
         setSavedVideos(merged)
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
 
-        await fetch("/api/saved-videos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ savedVideos: merged }),
-        })
+        await apiFetch(
+          "/api/saved-videos",
+          {
+            method: "POST",
+            body: JSON.stringify({ savedVideos: merged }),
+          },
+          session.token,
+        )
       } catch (error) {
-        setAuthMessage(error.message || "Unable to load saved videos.")
+        if (!cancelled) {
+          setAuthMessage(error.message || "Unable to load saved videos.")
+        }
       }
     }
 
@@ -338,7 +365,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
     return () => {
       cancelled = true
     }
-  }, [isAuthed])
+  }, [isAuthed, session.token])
 
   useEffect(() => {
     if (!isAuthed) {
@@ -352,12 +379,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
       setVideoMessage("")
 
       try {
-        const response = await fetch("/api/youtube/search", { cache: "no-store" })
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message)
-        }
+        const data = await apiFetch("/api/youtube/search", {}, session.token)
 
         if (!cancelled) {
           setVideos(data.videos || [])
@@ -378,7 +400,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
     return () => {
       cancelled = true
     }
-  }, [isAuthed])
+  }, [isAuthed, session.token])
 
   async function syncVideos(nextVideos) {
     setSavedVideos(nextVideos)
@@ -388,11 +410,14 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
       return
     }
 
-    await fetch("/api/saved-videos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ savedVideos: nextVideos }),
-    })
+    await apiFetch(
+      "/api/saved-videos",
+      {
+        method: "POST",
+        body: JSON.stringify({ savedVideos: nextVideos }),
+      },
+      session.token,
+    )
   }
 
   async function handleToggleSave(video) {
@@ -418,31 +443,19 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
     setAuthMessage("")
 
     try {
-      if (mode === "signup") {
-        const registerResponse = await fetch("/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(authForm),
-        })
-
-        const registerData = await registerResponse.json()
-
-        if (!registerResponse.ok) {
-          throw new Error(registerData.message)
-        }
-      }
-
-      const loginResponse = await signIn("credentials", {
-        email: authForm.email,
-        password: authForm.password,
-        redirect: false,
+      const path = mode === "signup" ? "/api/auth/register" : "/api/auth/login"
+      const data = await apiFetch(path, {
+        method: "POST",
+        body: JSON.stringify(authForm),
       })
 
-      if (loginResponse?.error) {
-        throw new Error("Invalid email or password.")
+      const nextSession = {
+        token: data.token,
+        user: data.user,
       }
 
-      setAuthMessage(mode === "signup" ? "Account created and signed in." : "Signed in successfully.")
+      window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession))
+      setSession(nextSession)
       setAuthForm({ name: "", email: "", password: "" })
     } catch (error) {
       setAuthMessage(error.message || "Authentication failed.")
@@ -463,15 +476,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
         params.set("q", query.trim())
       }
 
-      const response = await fetch(`/api/youtube/search?${params.toString()}`, {
-        cache: "no-store",
-      })
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message)
-      }
-
+      const data = await apiFetch(`/api/youtube/search?${params.toString()}`, {}, session.token)
       setVideos(data.videos || [])
     } catch (error) {
       setVideoMessage(error.message || "Search failed.")
@@ -480,17 +485,13 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
     }
   }
 
-  async function handleLogout() {
-    setAuthMessage("")
-    setVideoMessage("")
-    setQuery("")
+  function handleLogout() {
+    setSession({ token: "", user: null })
     setVideos([])
-
-    await signOut({
-      redirect: false,
-    })
-
-    router.refresh()
+    setQuery("")
+    setVideoMessage("")
+    setAuthMessage("")
+    window.localStorage.removeItem(SESSION_KEY)
   }
 
   const savedLookup = useMemo(
@@ -507,7 +508,6 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
         setAuthForm={setAuthForm}
         authMessage={authMessage}
         authLoading={authLoading}
-        googleEnabled={googleEnabled}
         onSubmit={handleAuthSubmit}
       />
     )
@@ -519,7 +519,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
         <section className="glass-panel spotlight-card rounded-[2.25rem] p-6 sm:p-8 lg:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-sky-200">
-              YouTube Search • Authenticated Access
+              GitHub Pages Frontend • Render Backend
             </div>
             <button
               type="button"
@@ -532,22 +532,20 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
             <div>
-              <p className="text-sm uppercase tracking-[0.4em] text-slate-400">
-                Welcome back
-              </p>
+              <p className="text-sm uppercase tracking-[0.4em] text-slate-400">Welcome back</p>
               <h1 className="headline mt-4 max-w-3xl text-5xl font-semibold leading-[0.95] text-white sm:text-6xl">
                 Search and watch YouTube videos after login.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                Use the search bar to pull live YouTube results. Trending videos load first, and you can save anything you want to revisit later.
+                Your frontend is static, but the experience is still full stack. Auth, YouTube search, and saved videos all run through the deployed Render API.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-300">
-                  Signed in as {session?.user?.name || session?.user?.email}
+                  Signed in as {session.user?.name || session.user?.email}
                 </div>
                 <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm text-slate-300">
-                  {youtubeEnabled ? "YouTube API connected" : "Add YOUTUBE_API_KEY in .env.local"}
+                  API: {API_BASE_URL}
                 </div>
               </div>
             </div>
@@ -556,7 +554,7 @@ export function HomeShell({ googleEnabled, initialSession, youtubeEnabled }) {
               <p className="text-xs uppercase tracking-[0.35em] text-violet-300">Search feed</p>
               <h2 className="headline mt-2 text-2xl font-semibold text-white">Find videos instantly</h2>
               <p className="mt-3 text-sm leading-7 text-slate-300">
-                Trending results load by default. Search uses the official YouTube Data API, then enriches results with video duration and view counts.
+                Trending results load by default from Render. Search uses the YouTube Data API on the backend, keeping your API key off GitHub Pages.
               </p>
               <div className="mt-6">
                 <SearchBar
