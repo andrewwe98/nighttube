@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nighttube-backend
+    name: nighttube-api
     env: node
     plan: free
     branch: main
