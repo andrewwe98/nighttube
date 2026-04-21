@@ -1,14 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 
 export function useApiFallback() {
-  const [apiUrl, setApiUrl] = useState(API_BASE_URL)
-  const [isApiDown, setIsApiDown] = useState(false)
-
-  return { apiUrl, isApiDown }
+  const isApiDown = false
+  return { apiUrl: API_BASE_URL, isApiDown }
 }
 
 export async function apiFetch(path, options = {}, token = "", customBaseUrl = null) {
@@ -22,20 +18,16 @@ export async function apiFetch(path, options = {}, token = "", customBaseUrl = n
     headers.Authorization = `Bearer ${token}`
   }
 
-  try {
-    const response = await fetch(`${baseUrl}${path}`, {
-      ...options,
-      headers,
-    })
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers,
+  })
 
-    const data = await response.json()
+  const data = await response.json()
 
-    if (!response.ok) {
-      throw new Error(data.message || "Request failed.")
-    }
-
-    return data
-  } catch (error) {
-    throw error
+  if (!response.ok) {
+    throw new Error(data.message || "Request failed.")
   }
+
+  return data
 }
