@@ -364,7 +364,7 @@ export function HomeShell() {
     return () => {
       cancelled = true
     }
-  }, [isAuthed, session.token])
+  }, [isAuthed, session.token, apiUrl])
 
   useEffect(() => {
     if (!isAuthed) {
@@ -398,7 +398,7 @@ export function HomeShell() {
     return () => {
       cancelled = true
     }
-  }, [isAuthed, session.token])
+  }, [isAuthed, session.token, apiUrl])
 
   async function syncVideos(nextVideos) {
     setSavedVideos(nextVideos)
