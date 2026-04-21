@@ -12,7 +12,7 @@ const app = express()
 const port = process.env.PORT || 4000
 
 // Build allowed origins list: allow FRONTEND_URL, GitHub Pages repo URL, and localhost during development
-const allowedOrigins = [process.env.FRONTEND_URL, "https://andrewwe98.github.io", "https://andrewwe98.github.io/nighttube", "http://localhost:3000", "http://localhost:3001", "http://localhost:3004"].filter(Boolean)
+const allowedOrigins = [process.env.FRONTEND_URL, "https://andrewwe98.github.io", "https://andrewwe98.github.io/nighttube", "https://andrewwe98.github.io/youtube-clone", "http://localhost:3000", "http://localhost:3001", "http://localhost:3004"].filter(Boolean)
 app.use(
   cors({
     origin: function (origin, callback) {
