@@ -538,30 +538,6 @@ export function HomeShell() {
 
             <AuthCard {...{mode, setMode, authForm, setAuthForm, authMessage: isApiDown ? "Backend is currently experiencing issues. Please try again later." : authMessage, authLoading, onSubmit: handleAuthSubmit}} />
           </section>
-
-          {videos.length > 0 && (
-            <section className="mt-12">
-              <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-rose-300">Trending</p>
-                  <h2 className="headline mt-2 text-3xl font-semibold text-white">Popular videos</h2>
-                </div>
-                <SearchBar query={query} setQuery={setQuery} loading={videoLoading} onSubmit={handleSearchSubmit} />
-              </div>
-
-              {videoMessage && (
-                <div className="mb-8 rounded-3xl border border-red-300/20 bg-red-950/20 px-6 py-4 text-red-300">
-                  {videoMessage}
-                </div>
-              )}
-
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {videos.map((video) => (
-                  <VideoCard key={video.videoId} video={video} isSaved={savedLookup.has(video.videoId)} onToggleSave={handleToggleSave} />
-                ))}
-              </div>
-            </section>
-          )}
         </div>
       </main>
     )
