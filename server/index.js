@@ -130,7 +130,7 @@ app.post("/api/saved-videos", requireAuth, async (request, response) => {
   }
 })
 
-app.get("/api/youtube/search", requireAuth, async (request, response) => {
+app.get("/api/youtube/search", async (request, response) => {
   try {
     const query = request.query.q?.toString() || ""
     const videos = query ? await searchVideos(query) : await getPopularVideos()

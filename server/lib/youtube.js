@@ -37,8 +37,14 @@ async function youtubeFetch(path, searchParams) {
     ...searchParams,
   }).toString()
 
+  console.log('YouTube API URL:', url.toString())
+  console.log('API Key present:', !!process.env.YOUTUBE_API_KEY)
+
   const response = await fetch(url)
   const data = await response.json()
+
+  console.log('YouTube API response status:', response.status)
+  console.log('YouTube API response:', JSON.stringify(data, null, 2))
 
   if (!response.ok) {
     throw new Error(data?.error?.message || "Unable to load YouTube videos.")

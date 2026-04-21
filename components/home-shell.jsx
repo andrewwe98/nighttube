@@ -367,10 +367,6 @@ export function HomeShell() {
   }, [isAuthed, session.token, apiUrl])
 
   useEffect(() => {
-    if (!isAuthed) {
-      return
-    }
-
     let cancelled = false
 
     async function loadVideos() {
@@ -378,6 +374,7 @@ export function HomeShell() {
       setVideoMessage("")
 
       try {
+        // Load popular videos without authentication, or search with auth
         const data = await apiFetch("/api/youtube/search", {}, session.token, apiUrl)
         if (!cancelled) {
           setVideos(data.videos || [])
@@ -398,7 +395,7 @@ export function HomeShell() {
     return () => {
       cancelled = true
     }
-  }, [isAuthed, session.token, apiUrl])
+  }, [session.token, apiUrl])
 
   async function syncVideos(nextVideos) {
     setSavedVideos(nextVideos)
@@ -510,15 +507,63 @@ export function HomeShell() {
 
   if (!isAuthed) {
     return (
-      <LoginShell
-        mode={mode}
-        setMode={setMode}
-        authForm={authForm}
-        setAuthForm={setAuthForm}
-        authMessage={isApiDown ? "Backend is currently experiencing issues. Please try again later." : authMessage}
-        authLoading={authLoading}
-        onSubmit={handleAuthSubmit}
-      />
+      <main className="relative overflow-hidden">
+        <div className="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-8 sm:px-6 lg:px-8">
+          <section className="grid w-full gap-6 lg:grid-cols-[1.25fr_0.85fr]">
+            <div className="glass-panel spotlight-card rounded-[2.5rem] p-8 sm:p-10 lg:p-12">
+              <div className="rounded-full border border-sky-300/20 bg-sky-300/10 px-4 py-2 text-xs uppercase tracking-[0.35em] text-sky-200">
+                React Frontend • Express.js API
+              </div>
+              <p className="mt-8 text-sm uppercase tracking-[0.4em] text-slate-400">Trending videos</p>
+              <h1 className="headline mt-4 max-w-4xl text-5xl font-semibold leading-[0.95] text-white sm:text-6xl">
+                Popular YouTube videos
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+                Browse trending videos or log in to search and save your favorites.
+              </p>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                {[
+                  ["Frontend", "React"],
+                  ["Backend", "Express.js"],
+                  ["API", "YouTube Data v3"],
+                ].map(([label, value]) => (
+                  <div key={label} className="glass-panel rounded-3xl px-5 py-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
+                    <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <AuthCard {...{mode, setMode, authForm, setAuthForm, authMessage: isApiDown ? "Backend is currently experiencing issues. Please try again later." : authMessage, authLoading, onSubmit: handleAuthSubmit}} />
+          </section>
+
+          {videos.length > 0 && (
+            <section className="mt-12">
+              <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-rose-300">Trending</p>
+                  <h2 className="headline mt-2 text-3xl font-semibold text-white">Popular videos</h2>
+                </div>
+                <SearchBar query={query} setQuery={setQuery} loading={videoLoading} onSubmit={handleSearchSubmit} />
+              </div>
+
+              {videoMessage && (
+                <div className="mb-8 rounded-3xl border border-red-300/20 bg-red-950/20 px-6 py-4 text-red-300">
+                  {videoMessage}
+                </div>
+              )}
+
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {videos.map((video) => (
+                  <VideoCard key={video.videoId} video={video} isSaved={savedLookup.has(video.videoId)} onToggleSave={handleToggleSave} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
     )
   }
 
