@@ -15,8 +15,6 @@ export default async function handler(req, res) {
 
     jwt.verify(token, process.env.JWT_SECRET || "token123")
 
-    const queryParam = req.query.q?.toString() || ""
-    
     // Mock YouTube data for now
     const mockVideos = [
       {
