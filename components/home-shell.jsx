@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { apiFetch, useApiFallback } from "./api-wrapper"
 
 const STORAGE_KEY = "nighttube-saved-videos"
 const SESSION_KEY = "nighttube-session"
@@ -26,29 +27,6 @@ function getStoredSession() {
   }
 }
 
-async function apiFetch(path, options = {}, token = "") {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed.")
-  }
-
-  return data
-}
 
 function AuthCard({
   mode,
@@ -298,6 +276,7 @@ function SavedList({ videos }) {
 }
 
 export function HomeShell() {
+  const { apiUrl, isApiDown } = useApiFallback()
   const [mode, setMode] = useState("login")
   const [authLoading, setAuthLoading] = useState(false)
   const [authMessage, setAuthMessage] = useState("")
@@ -335,7 +314,7 @@ export function HomeShell() {
 
     async function hydrateSavedVideos() {
       try {
-        const data = await apiFetch("/api/saved-videos", {}, session.token)
+        const data = await apiFetch("/api/saved-videos", {}, session.token, apiUrl)
 
         if (cancelled) {
           return
@@ -371,6 +350,7 @@ export function HomeShell() {
             body: JSON.stringify({ savedVideos: merged }),
           },
           session.token,
+          apiUrl,
         )
       } catch (error) {
         if (!cancelled) {
@@ -398,7 +378,7 @@ export function HomeShell() {
       setVideoMessage("")
 
       try {
-        const data = await apiFetch("/api/youtube/search", {}, session.token)
+        const data = await apiFetch("/api/youtube/search", {}, session.token, apiUrl)
 
         if (!cancelled) {
           setVideos(data.videos || [])
@@ -440,6 +420,7 @@ export function HomeShell() {
         body: JSON.stringify({ savedVideos: nextVideos }),
       },
       session.token,
+      apiUrl,
     )
   }
 
@@ -470,7 +451,7 @@ export function HomeShell() {
       const data = await apiFetch(path, {
         method: "POST",
         body: JSON.stringify(authForm),
-      })
+      }, "", apiUrl)
 
       const nextSession = {
         token: data.token,
@@ -503,7 +484,7 @@ export function HomeShell() {
         params.set("q", query.trim())
       }
 
-      const data = await apiFetch(`/api/youtube/search?${params.toString()}`, {}, session.token)
+      const data = await apiFetch(`/api/youtube/search?${params.toString()}`, {}, session.token, apiUrl)
       setVideos(data.videos || [])
     } catch (error) {
       setVideoMessage(error.message || "Search failed.")
@@ -537,7 +518,7 @@ export function HomeShell() {
         setMode={setMode}
         authForm={authForm}
         setAuthForm={setAuthForm}
-        authMessage={authMessage}
+        authMessage={isApiDown ? "Backend is currently experiencing issues. Please try again later." : authMessage}
         authLoading={authLoading}
         onSubmit={handleAuthSubmit}
       />
