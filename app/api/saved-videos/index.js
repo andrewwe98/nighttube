@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       const user = jwt.verify(token, process.env.JWT_SECRET || "token123")
       const userVideos = savedVideos.get(user.email) || []
       return res.json({ savedVideos: userVideos })
-    } catch (error) {
+    } catch {
       return res.status(401).json({ message: "Unauthorized." })
     }
   } else if (req.method === 'POST') {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       const newSavedVideos = Array.isArray(req.body.savedVideos) ? req.body.savedVideos : []
       savedVideos.set(user.email, newSavedVideos)
       return res.json({ savedVideos: newSavedVideos })
-    } catch (error) {
+    } catch {
       return res.status(401).json({ message: "Unauthorized." })
     }
   } else {

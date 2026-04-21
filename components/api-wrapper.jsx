@@ -10,24 +10,58 @@ export function useApiFallback() {
   const [isApiDown, setIsApiDown] = useState(false)
 
   useEffect(() => {
-    // Test if the primary API is working
+    let cancelled = false
+    const controller = new AbortController()
+
     async function testApi() {
       try {
         const response = await fetch(`${API_BASE_URL}/api/health`, {
           method: 'GET',
           mode: 'cors',
-          timeout: 5000
+          signal: controller.signal,
         })
-        if (!response.ok) throw new Error('API not responding')
-        setIsApiDown(false)
-      } catch (error) {
-        console.warn('Primary API failed, falling back:', error.message)
-        setApiUrl(FALLBACK_API_URL)
-        setIsApiDown(true)
+
+        if (!response.ok) {
+          throw new Error('Primary API not responding')
+        }
+
+        if (!cancelled) {
+          setApiUrl(API_BASE_URL)
+          setIsApiDown(false)
+        }
+      } catch (primaryError) {
+        console.warn('Primary API failed:', primaryError.message)
+
+        try {
+          const fallbackResponse = await fetch(`${FALLBACK_API_URL}/api/health`, {
+            method: 'GET',
+            mode: 'cors',
+            signal: controller.signal,
+          })
+
+          if (!fallbackResponse.ok) {
+            throw new Error('Fallback API not responding')
+          }
+
+          if (!cancelled) {
+            setApiUrl(FALLBACK_API_URL)
+            setIsApiDown(false)
+          }
+        } catch (fallbackError) {
+          console.warn('Fallback API failed:', fallbackError.message)
+          if (!cancelled) {
+            setIsApiDown(true)
+          }
+        }
       }
     }
 
     testApi()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
   }, [])
 
   return { apiUrl, isApiDown }

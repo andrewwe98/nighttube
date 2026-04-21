@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
     jwt.verify(token, process.env.JWT_SECRET || "token123")
 
-    const query = req.query.q?.toString() || ""
+    const queryParam = req.query.q?.toString() || ""
     
     // Mock YouTube data for now
     const mockVideos = [
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     ]
 
     return res.json({ videos: mockVideos })
-  } catch (error) {
+  } catch {
     return res.status(401).json({ message: "Unauthorized." })
   }
 }
