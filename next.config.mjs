@@ -6,9 +6,6 @@ const __dirname = path.dirname(__filename)
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
-  basePath: "/nighttube",
-  assetPrefix: "/nighttube",
   trailingSlash: true,
   images: {
     unoptimized: true,
@@ -19,7 +16,6 @@ const nextConfig = {
       },
     ],
   },
-  outputFileTracingRoot: __dirname,
 }
 
 export default nextConfig
