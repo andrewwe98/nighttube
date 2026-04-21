@@ -13,7 +13,7 @@
     "typedRoutes": false,
     "distDir": ".next",
     "cleanDistDir": true,
-    "assetPrefix": "",
+    "assetPrefix": "/nighttube",
     "cacheMaxMemorySize": 52428800,
     "configOrigin": "next.config.mjs",
     "useFileSystemPublicRoutes": true,
@@ -47,7 +47,7 @@
         256,
         384
       ],
-      "path": "/_next/image/",
+      "path": "/nighttube/_next/image/",
       "loader": "default",
       "loaderFile": "",
       "domains": [],
@@ -76,9 +76,9 @@
       "pagesBufferLength": 5
     },
     "amp": {
-      "canonicalBase": ""
+      "canonicalBase": "/nighttube"
     },
-    "basePath": "",
+    "basePath": "/nighttube",
     "sassOptions": {},
     "trailingSlash": true,
     "i18n": null,

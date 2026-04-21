@@ -2,8 +2,16 @@
   "version": 3,
   "pages404": true,
   "caseSensitive": false,
-  "basePath": "",
+  "basePath": "/nighttube",
   "redirects": [
+    {
+      "source": "/nighttube",
+      "destination": "/nighttube/",
+      "basePath": false,
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^/nighttube$"
+    },
     {
       "source": "/:file((?!\\.well-known(?:/.*)?)(?:[^/]+/)*[^/]+\\.\\w+)/",
       "destination": "/:file",
