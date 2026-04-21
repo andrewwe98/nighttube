@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "check": "npm run lint && npm run build"
     ,
-    "predeploy": "NEXT_PUBLIC_API_BASE_URL=https://nighttube.vercel.app/api next build && touch out/.nojekyll && node fix-paths.js",
+    "predeploy": "NEXT_PUBLIC_API_BASE_URL=https://nighttube-api.onrender.com next build && touch out/.nojekyll && node fix-paths.js",
     "deploy": "gh-pages -d out -t"
   },
   "dependencies": {
