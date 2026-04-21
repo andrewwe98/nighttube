@@ -1,0 +1,11 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "cd server && npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+
+[[services]]
+name = "nighttube-backend"
+env = "node"

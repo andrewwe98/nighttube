@@ -1,0 +1,4 @@
+YOUTUBE_API_KEY=AIzaSyDFQCMrYouQ4ahbM7pJRGu3Hzm1QF6g_tY
+JWT_SECRET=token123
+FRONTEND_URL=https://andrewwe98.github.io/nighttube
+PORT=4000
