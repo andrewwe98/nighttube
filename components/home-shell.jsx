@@ -379,7 +379,6 @@ export function HomeShell() {
 
       try {
         const data = await apiFetch("/api/youtube/search", {}, session.token, apiUrl)
-
         if (!cancelled) {
           setVideos(data.videos || [])
         }
@@ -479,11 +478,9 @@ export function HomeShell() {
 
     try {
       const params = new URLSearchParams()
-
       if (query.trim()) {
         params.set("q", query.trim())
       }
-
       const data = await apiFetch(`/api/youtube/search?${params.toString()}`, {}, session.token, apiUrl)
       setVideos(data.videos || [])
     } catch (error) {
