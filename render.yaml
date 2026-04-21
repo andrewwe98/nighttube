@@ -10,4 +10,9 @@ services:
     envVars:
       - key: FRONTEND_URL
         value: "https://andrewwe98.github.io/nighttube"
-      # Do NOT store secrets here in the repo. Set MONGODB_URI and JWT_SECRET in the Render dashboard.
+      - key: YOUTUBE_API_KEY
+        value: "AIzaSyDFQCMrYouQ4ahbM7pJRGu3Hzm1QF6g_tY"
+      - key: JWT_SECRET
+        value: "token123"
+      - key: PORT
+        value: "4000"
